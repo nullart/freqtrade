@@ -292,23 +292,6 @@ def test_backtesting__init__(mocker, default_conf) -> None:
     """
     Test Backtesting.__init__() method
     """
-    init_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._init', init_mock)
-
-    backtesting = Backtesting(default_conf)
-    assert backtesting.config == default_conf
-    assert backtesting.analyze is None
-    assert backtesting.ticker_interval is None
-    assert backtesting.tickerdata_to_dataframe is None
-    assert backtesting.populate_buy_trend is None
-    assert backtesting.populate_sell_trend is None
-    assert init_mock.call_count == 1
-
-
-def test_backtesting_init(default_conf) -> None:
-    """
-    Test Backtesting._init() method
-    """
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert isinstance(backtesting.analyze, Analyze)

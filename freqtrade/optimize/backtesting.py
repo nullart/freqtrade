@@ -151,9 +151,6 @@ class Backtesting(object):
 
             lock_pair_until = None
             for index, row in enumerate(ticker):
-                if row.buy == 0 or row.sell == 1:
-                    continue  # skip rows where no buy signal or that would immediately sell off
-
                 if realistic:
                     if lock_pair_until and row.date <= lock_pair_until:
                         continue

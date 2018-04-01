@@ -436,7 +436,7 @@ class Hyperopt(Backtesting):
             self.analyze.strategy.minimal_roi = self.generate_roi_table(params)
 
         if self.has_space('buy'):
-            self.populate_buy_trend = self.buy_strategy_generator(params)
+            self.analyze.populate_buy_trend = self.buy_strategy_generator(params)
 
         if self.has_space('stoploss'):
             self.analyze.strategy.stoploss = params['stoploss']
@@ -499,13 +499,13 @@ class Hyperopt(Backtesting):
         data = load_data(
             datadir=self.config.get('datadir'),
             pairs=self.config['exchange']['pair_whitelist'],
-            ticker_interval=self.ticker_interval,
+            ticker_interval=self.analyze.strategy.ticker_interval,
             timerange=timerange
         )
 
         if self.has_space('buy'):
             self.analyze.populate_indicators = Hyperopt.populate_indicators
-        self.processed = self.tickerdata_to_dataframe(data)
+        self.processed = self.analyze.tickerdata_to_dataframe(data)
 
         if self.config.get('mongodb'):
             logger.info('Using mongodb ...')

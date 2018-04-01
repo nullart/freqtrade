@@ -18,7 +18,7 @@ from freqtrade.optimize.backtesting import Backtesting, start, setup_configurati
 from freqtrade.tests.conftest import default_conf, log_has
 
 # Avoid to reinit the same object again and again
-_BACKTESTING = Backtesting(default_conf())
+_BACKTESTING: Backtesting = Backtesting(default_conf())
 
 
 def get_args(args) -> List[str]:
@@ -79,7 +79,7 @@ def simple_backtest(config, contour, num_results) -> None:
     backtesting = _BACKTESTING
 
     data = load_data_test(contour)
-    processed = backtesting.tickerdata_to_dataframe(data)
+    processed = backtesting.analyze.tickerdata_to_dataframe(data)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
         {
@@ -112,7 +112,7 @@ def _make_backtest_conf(conf=None, pair='BTC_UNITEST', record=None):
     data = trim_dictlist(data, -200)
     return {
         'stake_amount': conf['stake_amount'],
-        'processed': _BACKTESTING.tickerdata_to_dataframe(data),
+        'processed': _BACKTESTING.analyze.tickerdata_to_dataframe(data),
         'max_open_trades': 10,
         'realistic': True,
         'record': record
@@ -153,13 +153,13 @@ def _run_backtest_1(fun, backtest_conf):
     # emulate strategy being pure, by override/restore here
     # if we dont do this, the override in strategy will carry over
     # to other tests
-    old_buy = _BACKTESTING.populate_buy_trend
-    old_sell = _BACKTESTING.populate_sell_trend
-    _BACKTESTING.populate_buy_trend = fun  # Override
-    _BACKTESTING.populate_sell_trend = fun  # Override
+    old_buy = _BACKTESTING.analyze.populate_buy_trend
+    old_sell = _BACKTESTING.analyze.populate_sell_trend
+    _BACKTESTING.analyze.populate_buy_trend = fun  # Override
+    _BACKTESTING.analyze.populate_sell_trend = fun  # Override
     results = _BACKTESTING.backtest(backtest_conf)
-    _BACKTESTING.populate_buy_trend = old_buy  # restore override
-    _BACKTESTING.populate_sell_trend = old_sell  # restore override
+    _BACKTESTING.analyze.populate_buy_trend = old_buy  # restore override
+    _BACKTESTING.analyze.populate_sell_trend = old_sell  # restore override
     return results
 
 
@@ -293,30 +293,9 @@ def test_backtesting__init__(mocker, default_conf) -> None:
     """
     Test Backtesting.__init__() method
     """
-    init_mock = MagicMock()
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting._init', init_mock)
-
-    backtesting = Backtesting(default_conf)
-    assert backtesting.config == default_conf
-    assert backtesting.analyze is None
-    assert backtesting.ticker_interval is None
-    assert backtesting.tickerdata_to_dataframe is None
-    assert backtesting.populate_buy_trend is None
-    assert backtesting.populate_sell_trend is None
-    assert init_mock.call_count == 1
-
-
-def test_backtesting_init(default_conf) -> None:
-    """
-    Test Backtesting._init() method
-    """
     backtesting = Backtesting(default_conf)
     assert backtesting.config == default_conf
     assert isinstance(backtesting.analyze, Analyze)
-    assert backtesting.ticker_interval == 5
-    assert callable(backtesting.tickerdata_to_dataframe)
-    assert callable(backtesting.populate_buy_trend)
-    assert callable(backtesting.populate_sell_trend)
 
 
 def test_tickerdata_to_dataframe(default_conf) -> None:
@@ -329,7 +308,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     tickerlist = {'BTC_UNITEST': tick}
 
     backtesting = _BACKTESTING
-    data = backtesting.tickerdata_to_dataframe(tickerlist)
+    data = backtesting.analyze.tickerdata_to_dataframe(tickerlist)
     assert len(data['BTC_UNITEST']) == 100
 
     # Load Analyze to compare the result between Backtesting function and Analyze are the same
@@ -344,7 +323,7 @@ def test_get_timeframe() -> None:
     """
     backtesting = _BACKTESTING
 
-    data = backtesting.tickerdata_to_dataframe(
+    data = backtesting.analyze.tickerdata_to_dataframe(
         optimize.load_data(
             None,
             ticker_interval=1,
@@ -437,7 +416,7 @@ def test_backtest(default_conf) -> None:
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.tickerdata_to_dataframe(data),
+            'processed': backtesting.analyze.tickerdata_to_dataframe(data),
             'max_open_trades': 10,
             'realistic': True
         }
@@ -457,7 +436,7 @@ def test_backtest_1min_ticker_interval(default_conf) -> None:
     results = backtesting.backtest(
         {
             'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.tickerdata_to_dataframe(data),
+            'processed': backtesting.analyze.tickerdata_to_dataframe(data),
             'max_open_trades': 1,
             'realistic': True
         }
@@ -472,7 +451,7 @@ def test_processed() -> None:
     backtesting = _BACKTESTING
 
     dict_of_tickerrows = load_data_test('raise')
-    dataframes = backtesting.tickerdata_to_dataframe(dict_of_tickerrows)
+    dataframes = backtesting.analyze.tickerdata_to_dataframe(dict_of_tickerrows)
     dataframe = dataframes['BTC_UNITEST']
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
@@ -490,7 +469,7 @@ def test_backtest_pricecontours(default_conf) -> None:
 # Test backtest using offline data (testdata directory)
 def test_backtest_ticks(default_conf):
     ticks = [1, 5]
-    fun = _BACKTESTING.populate_buy_trend
+    fun = _BACKTESTING.analyze.populate_buy_trend
     for tick in ticks:
         backtest_conf = _make_backtest_conf(conf=default_conf)
         results = _run_backtest_1(fun, backtest_conf)

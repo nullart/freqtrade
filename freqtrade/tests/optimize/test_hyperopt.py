@@ -173,7 +173,7 @@ def test_fmin_best_results(mocker, default_conf, caplog) -> None:
     StrategyResolver({'strategy': 'DefaultStrategy'})
     hyperopt = Hyperopt(conf)
     hyperopt.trials = create_trials(mocker)
-    hyperopt.tickerdata_to_dataframe = MagicMock()
+    hyperopt.analyze.tickerdata_to_dataframe = MagicMock()
     hyperopt.start()
 
     exists = [
@@ -216,7 +216,7 @@ def test_fmin_throw_value_error(mocker, default_conf, caplog) -> None:
     StrategyResolver({'strategy': 'DefaultStrategy'})
     hyperopt = Hyperopt(conf)
     hyperopt.trials = create_trials(mocker)
-    hyperopt.tickerdata_to_dataframe = MagicMock()
+    hyperopt.analyze.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
 
@@ -258,7 +258,7 @@ def test_resuming_previous_hyperopt_results_succeeds(mocker, default_conf) -> No
     StrategyResolver({'strategy': 'DefaultStrategy'})
     hyperopt = Hyperopt(conf)
     hyperopt.trials = trials
-    hyperopt.tickerdata_to_dataframe = MagicMock()
+    hyperopt.analyze.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
 
@@ -333,7 +333,7 @@ def test_start_calls_fmin(mocker, default_conf) -> None:
 
     hyperopt = Hyperopt(conf)
     hyperopt.trials = trials
-    hyperopt.tickerdata_to_dataframe = MagicMock()
+    hyperopt.analyze.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
     mock_fmin.assert_called_once()
@@ -356,7 +356,7 @@ def test_start_uses_mongotrials(mocker, default_conf) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.hyperopt_optimize_conf', return_value=conf)
 
     hyperopt = Hyperopt(conf)
-    hyperopt.tickerdata_to_dataframe = MagicMock()
+    hyperopt.analyze.tickerdata_to_dataframe = MagicMock()
 
     hyperopt.start()
     mock_mongotrials.assert_called_once()
@@ -415,7 +415,7 @@ def test_populate_indicators() -> None:
     """
     tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
     tickerlist = {'BTC_UNITEST': tick}
-    dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
+    dataframes = _HYPEROPT.analyze.tickerdata_to_dataframe(tickerlist)
     dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])
 
     # Check if some indicators are generated. We will not test all of them
@@ -430,7 +430,7 @@ def test_buy_strategy_generator() -> None:
     """
     tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
     tickerlist = {'BTC_UNITEST': tick}
-    dataframes = _HYPEROPT.tickerdata_to_dataframe(tickerlist)
+    dataframes = _HYPEROPT.analyze.tickerdata_to_dataframe(tickerlist)
     dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])
 
     populate_buy_trend = _HYPEROPT.buy_strategy_generator(

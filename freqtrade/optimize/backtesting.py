@@ -68,7 +68,7 @@ class Backtesting(object):
         return min(timeframe, key=operator.itemgetter(0))[0], \
             max(timeframe, key=operator.itemgetter(1))[1]
 
-    def _generate_text_table(self, data: Dict[str, Dict], results: DataFrame) -> str:
+    def _generate_text_table(self, data: Dict[str, List[Dict]], results: DataFrame) -> str:
         """
         Generates and returns a text table for the given backtest data and the results dataframe
         :return: pretty printed table with tabulate as str

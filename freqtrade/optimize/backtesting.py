@@ -89,8 +89,10 @@ class Backtesting(object):
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
-            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[Trade]:
+            partial_ticker: List, trade_count_lock: Dict,
+            args: Optional[Dict] = None) -> Optional[Trade]:
 
+        args = args or {}
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
         trade = Trade(
@@ -153,7 +155,7 @@ class Backtesting(object):
                     continue  # skip rows where no buy signal or that would immediately sell off
 
                 if realistic:
-                    if lock_pair_until is not None and row.date <= lock_pair_until:
+                    if lock_pair_until and row.date <= lock_pair_until:
                         continue
                 if max_open_trades > 0:
                     # Check if max_open_trades has already been reached for the given date
@@ -163,7 +165,7 @@ class Backtesting(object):
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
                 trade_entry = self._get_sell_trade_entry(
-                    pair, row, ticker[index + 1:], trade_count_lock, args)
+                    pair, row, ticker[index + 1:], trade_count_lock, args=args)
 
                 if trade_entry:
                     lock_pair_until = trade_entry.close_date
@@ -211,14 +213,12 @@ class Backtesting(object):
                 )
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
-
-            timerange = Arguments.parse_timerange(self.config.get('timerange'))
             data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
                 ticker_interval=self.analyze.strategy.ticker_interval,
                 refresh_pairs=self.config.get('refresh_pairs', False),
-                timerange=timerange
+                timerange=Arguments.parse_timerange(self.config.get('timerange'))
             )
 
         # Ignore max_open_trades in backtesting, except realistic flag was passed

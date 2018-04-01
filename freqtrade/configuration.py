@@ -108,6 +108,10 @@ class Configuration(object):
             else:
                 logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
+        # Log message about all experimental flags in use
+        for key, value in config.get('experimental', {}).items():
+            logger.info('experimental: Using %s: %s', key, str(value))
+
         return config
 
     def _load_backtesting_config(self, config: Dict[str, Any]) -> Dict[str, Any]:

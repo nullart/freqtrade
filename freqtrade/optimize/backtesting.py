@@ -142,7 +142,6 @@ class Backtesting(object):
         trades = []
         trade_count_lock = {}
         for pair, pair_data in processed.items():
-            pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
             ticker_data = self.analyze.populate_sell_trend(
                 self.analyze.populate_buy_trend(pair_data)

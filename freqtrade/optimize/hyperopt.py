@@ -442,11 +442,9 @@ class Hyperopt(Backtesting):
             self.analyze.strategy.stoploss = params['stoploss']
 
         results = self.backtest(
-            {
-                'stake_amount': self.config['stake_amount'],
-                'processed': self.processed,
-                'realistic': self.config.get('realistic_simulation', False),
-            }
+            self.config['stake_amount'],
+            self.processed,
+            self.config.get('realistic_simulation', False),
         )
         result_explanation = self.format_results(results)
 

@@ -90,11 +90,7 @@ class Backtesting(object):
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
             partial_ticker: List, trade_count_lock: Dict,
-            args: Optional[Dict] = None) -> Optional[Trade]:
-
-        args = args or {}
-        stake_amount = args['stake_amount']
-        max_open_trades = args.get('max_open_trades', 0)
+            stake_amount: float, max_open_trades: int) -> Optional[Trade]:
         trade = Trade(
             pair=pair,
             open_rate=buy_row.close,
@@ -116,7 +112,9 @@ class Backtesting(object):
                 return trade
         return None
 
-    def backtest(self, args: Dict) -> DataFrame:
+    def backtest(
+            self, stake_amount: float, processed: Dict[str, Any], realistic: bool,
+            max_open_trades: Optional[int] = 0, record: Optional[bool] = False) -> DataFrame:
         """
         Implements backtesting functionality
 
@@ -124,25 +122,19 @@ class Backtesting(object):
         Of course try to not have ugly code. By some accessor are sometime slower than functions.
         Avoid, logging on this method
 
-        :param args: a dict containing:
-            stake_amount: btc amount to use for each trade
-            processed: a processed dictionary with format {pair, data}
-            max_open_trades: maximum number of concurrent trades (default: 0, disabled)
-            realistic: do we try to simulate realistic trades? (default: True)
-            sell_profit_only: sell if profit only
-            use_sell_signal: act on sell-signal
+        :param stake_amount: btc amount to use for each trade
+        :param processed: a processed dictionary with format {pair, data}
+        :param realistic: do we try to simulate realistic trades?
+        :param max_open_trades: maximum number of concurrent trades (default: 0, disabled)
+        :param record: records trades made (default: False)
         :return: DataFrame
         """
         headers = ['date', 'buy', 'open', 'close', 'sell']
-        processed = args['processed']
-        max_open_trades = args.get('max_open_trades', 0)
-        realistic = args.get('realistic', False)
-        record = args.get('record', None)
         records = []
         trades = []
         trade_count_lock = {}
         for pair, pair_data in processed.items():
-
+            pair_data['buy'], pair_data['sell'] = 0, 0
             ticker_data = self.analyze.populate_sell_trend(
                 self.analyze.populate_buy_trend(pair_data)
             )[headers]
@@ -161,7 +153,7 @@ class Backtesting(object):
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
                 trade_entry = self._get_sell_trade_entry(
-                    pair, row, ticker[index + 1:], trade_count_lock, args=args)
+                    pair, row, ticker[index + 1:], trade_count_lock, stake_amount, max_open_trades)
 
                 if trade_entry:
                     lock_pair_until = trade_entry.close_date
@@ -236,17 +228,13 @@ class Backtesting(object):
         )
 
         # Execute backtest and print results
-        sell_profit_only = self.config.get('experimental', {}).get('sell_profit_only', False)
-        use_sell_signal = self.config.get('experimental', {}).get('use_sell_signal', False)
-        results = self.backtest({
-            'stake_amount': self.config.get('stake_amount'),
-            'processed': preprocessed,
-            'max_open_trades': max_open_trades,
-            'realistic': self.config.get('realistic_simulation', False),
-            'sell_profit_only': sell_profit_only,
-            'use_sell_signal': use_sell_signal,
-            'record': self.config.get('export'),
-        })
+        results = self.backtest(
+            self.config.get('stake_amount'),
+            preprocessed,
+            self.config.get('realistic_simulation', False),
+            max_open_trades,
+            self.config.get('export'),
+        )
         logger.info(
             '\n==================================== '
             'BACKTESTING REPORT'

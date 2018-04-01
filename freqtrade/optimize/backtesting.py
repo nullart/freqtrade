@@ -35,23 +35,7 @@ class Backtesting(object):
     """
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.analyze = None
-        self.ticker_interval = None
-        self.tickerdata_to_dataframe = None
-        self.populate_buy_trend = None
-        self.populate_sell_trend = None
-        self._init()
-
-    def _init(self) -> None:
-        """
-        Init objects required for backtesting
-        :return: None
-        """
         self.analyze = Analyze(self.config)
-        self.ticker_interval = self.analyze.strategy.ticker_interval
-        self.tickerdata_to_dataframe = self.analyze.tickerdata_to_dataframe
-        self.populate_buy_trend = self.analyze.populate_buy_trend
-        self.populate_sell_trend = self.analyze.populate_sell_trend
         exchange._API = Bittrex({'key': '', 'secret': ''})
 
     @staticmethod
@@ -105,16 +89,17 @@ class Backtesting(object):
 
     def _get_sell_trade_entry(
             self, pair: str, buy_row: DataFrame,
-            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[Tuple]:
+            partial_ticker: List, trade_count_lock: Dict, args: Dict) -> Optional[Trade]:
 
         stake_amount = args['stake_amount']
         max_open_trades = args.get('max_open_trades', 0)
         trade = Trade(
+            pair=pair,
             open_rate=buy_row.close,
             open_date=buy_row.date,
             stake_amount=stake_amount,
             amount=stake_amount / buy_row.open,
-            fee=exchange.get_fee()
+            fee=exchange.get_fee(),
         )
 
         # calculate win/lose forwards from buy point
@@ -123,18 +108,10 @@ class Backtesting(object):
                 # Increase trade_count_lock for every iteration
                 trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
 
-            buy_signal = sell_row.buy
-            if self.analyze.should_sell(trade, sell_row.close, sell_row.date, buy_signal,
-                                        sell_row.sell):
-                return \
-                    sell_row, \
-                    (
-                        pair,
-                        trade.calc_profit_percent(rate=sell_row.close),
-                        trade.calc_profit(rate=sell_row.close),
-                        (sell_row.date - buy_row.date).seconds // 60
-                    ), \
-                    sell_row.date
+            if self.analyze.should_sell(
+                    trade, sell_row.close, sell_row.date, sell_row.buy, sell_row.sell):
+                trade.close(sell_row.close, date=sell_row.date)
+                return trade
         return None
 
     def backtest(self, args: Dict) -> DataFrame:
@@ -165,8 +142,10 @@ class Backtesting(object):
         for pair, pair_data in processed.items():
             pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-            ticker_data = self.populate_sell_trend(self.populate_buy_trend(pair_data))[headers]
-            ticker = [x for x in ticker_data.itertuples()]
+            ticker_data = self.analyze.populate_sell_trend(
+                self.analyze.populate_buy_trend(pair_data)
+            )[headers]
+            ticker = list(ticker_data.itertuples())
 
             lock_pair_until = None
             for index, row in enumerate(ticker):
@@ -183,21 +162,29 @@ class Backtesting(object):
 
                     trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
 
-                ret = self._get_sell_trade_entry(pair, row, ticker[index + 1:],
-                                                 trade_count_lock, args)
+                trade_entry = self._get_sell_trade_entry(
+                    pair, row, ticker[index + 1:], trade_count_lock, args)
 
-                if ret:
-                    row2, trade_entry, next_date = ret
-                    lock_pair_until = next_date
-                    trades.append(trade_entry)
+                if trade_entry:
+                    lock_pair_until = trade_entry.close_date
+                    trades.append((
+                        trade_entry.pair,
+                        trade_entry.close_profit,
+                        trade_entry.calc_profit(),
+                        (trade_entry.close_date - trade_entry.open_date).seconds // 60,
+                    ))
                     if record:
                         # Note, need to be json.dump friendly
                         # record a tuple of pair, current_profit_percent,
-                        # entry-date, duration
-                        records.append((pair, trade_entry[1],
-                                        row.date.strftime('%s'),
-                                        row2.date.strftime('%s'),
-                                        index, trade_entry[3]))
+                        # entry-date, close-date and duration
+                        records.append((
+                            trade_entry.pair,
+                            trade_entry.close_profit,
+                            trade_entry.open_date.strftime('%s'),
+                            trade_entry.close_date.strftime('%s'),
+                            index,
+                            (trade_entry.close_date - trade_entry.open_date).seconds // 60,
+                        ))
         # For now export inside backtest(), maybe change so that backtest()
         # returns a tuple like: (dataframe, records, logs, etc)
         if record and record.find('trades') >= 0:
@@ -219,7 +206,9 @@ class Backtesting(object):
         if self.config.get('live'):
             logger.info('Downloading data for all pairs in whitelist ...')
             for pair in pairs:
-                data[pair] = exchange.get_ticker_history(pair, self.ticker_interval)
+                data[pair] = exchange.get_ticker_history(
+                    pair, self.analyze.strategy.ticker_interval
+                )
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
 
@@ -227,7 +216,7 @@ class Backtesting(object):
             data = optimize.load_data(
                 self.config['datadir'],
                 pairs=pairs,
-                ticker_interval=self.ticker_interval,
+                ticker_interval=self.analyze.strategy.ticker_interval,
                 refresh_pairs=self.config.get('refresh_pairs', False),
                 timerange=timerange
             )
@@ -239,7 +228,7 @@ class Backtesting(object):
             logger.info('Ignoring max_open_trades (realistic_simulation not set) ...')
             max_open_trades = 0
 
-        preprocessed = self.tickerdata_to_dataframe(data)
+        preprocessed = self.analyze.tickerdata_to_dataframe(data)
 
         # Print timeframe
         min_date, max_date = self.get_timeframe(preprocessed)
@@ -253,26 +242,21 @@ class Backtesting(object):
         # Execute backtest and print results
         sell_profit_only = self.config.get('experimental', {}).get('sell_profit_only', False)
         use_sell_signal = self.config.get('experimental', {}).get('use_sell_signal', False)
-        results = self.backtest(
-            {
-                'stake_amount': self.config.get('stake_amount'),
-                'processed': preprocessed,
-                'max_open_trades': max_open_trades,
-                'realistic': self.config.get('realistic_simulation', False),
-                'sell_profit_only': sell_profit_only,
-                'use_sell_signal': use_sell_signal,
-                'record': self.config.get('export')
-            }
-        )
+        results = self.backtest({
+            'stake_amount': self.config.get('stake_amount'),
+            'processed': preprocessed,
+            'max_open_trades': max_open_trades,
+            'realistic': self.config.get('realistic_simulation', False),
+            'sell_profit_only': sell_profit_only,
+            'use_sell_signal': use_sell_signal,
+            'record': self.config.get('export'),
+        })
         logger.info(
             '\n==================================== '
             'BACKTESTING REPORT'
             ' ====================================\n'
             '%s',
-            self._generate_text_table(
-                data,
-                results
-            )
+            self._generate_text_table(data, results)
         )
 
 

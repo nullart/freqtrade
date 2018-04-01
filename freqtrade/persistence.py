@@ -129,17 +129,17 @@ class Trade(_DECL_BASE):
             raise ValueError('Unknown order type: {}'.format(order['type']))
         cleanup()
 
-    def close(self, rate: float) -> None:
+    def close(self, rate: float, date: Optional[datetime] = None) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
         and marks trade as closed
         """
         self.close_rate = Decimal(rate)
         self.close_profit = self.calc_profit_percent()
-        self.close_date = datetime.utcnow()
+        self.close_date = date or datetime.utcnow()
         self.is_open = False
         self.open_order_id = None
-        logger.info(
+        logger.debug(
             'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
             self
         )

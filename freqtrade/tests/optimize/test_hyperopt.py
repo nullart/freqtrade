@@ -413,7 +413,7 @@ def test_populate_indicators() -> None:
     """
     Test Hyperopt.populate_indicators()
     """
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tick = load_tickerdata_file('BTC_UNITEST', 1)
     tickerlist = {'BTC_UNITEST': tick}
     dataframes = _HYPEROPT.analyze.tickerdata_to_dataframe(tickerlist)
     dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])
@@ -428,7 +428,7 @@ def test_buy_strategy_generator() -> None:
     """
     Test Hyperopt.buy_strategy_generator()
     """
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tick = load_tickerdata_file('BTC_UNITEST', 1)
     tickerlist = {'BTC_UNITEST': tick}
     dataframes = _HYPEROPT.analyze.tickerdata_to_dataframe(tickerlist)
     dataframe = _HYPEROPT.populate_indicators(dataframes['BTC_UNITEST'])

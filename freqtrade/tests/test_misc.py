@@ -42,13 +42,13 @@ def test_datesarray_to_datetimearray(ticker_history):
     assert date_len == 3
 
 
-def test_common_datearray(default_conf, mocker) -> None:
+def test_common_datearray(default_conf) -> None:
     """
     Test common_datearray()
     :return: None
     """
     analyze = Analyze(default_conf)
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1)
+    tick = load_tickerdata_file('BTC_UNITEST', 1)
     tickerlist = {'BTC_UNITEST': tick}
     dataframes = analyze.tickerdata_to_dataframe(tickerlist)
 

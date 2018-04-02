@@ -3,8 +3,10 @@
 import json
 import math
 import random
+import unittest
+from argparse import Namespace
 from copy import deepcopy
-from typing import List
+from typing import Callable, Dict
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -21,7 +23,7 @@ from freqtrade.tests.conftest import default_conf, log_has
 _BACKTESTING: Backtesting = Backtesting(default_conf())
 
 
-def get_args(args) -> List[str]:
+def get_args(args) -> Namespace:
     return Arguments(args, '').get_parsed_arg()
 
 
@@ -34,7 +36,7 @@ def trim_dictlist(dict_list, num):
 
 def load_data_test(what):
     timerange = ((None, 'line'), None, -100)
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'], timerange=timerange)
+    data = optimize.load_data(1, pairs=['BTC_UNITEST'], timerange=timerange)
     pair = data['BTC_UNITEST']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
@@ -51,7 +53,7 @@ def load_data_test(what):
                   'O': x * base,        # But replace O,H,L,C
                   'H': x * base + 0.0001,
                   'L': x * base - 0.0001,
-                  'C': x * base} for x in range(0, datalen)]}
+                  'C': x * base} for x in range(1, datalen)]}
     if what == 'lower':
         return {'BTC_UNITEST':
                 [{'T': pair[x]['T'],  # Keep old dates
@@ -81,34 +83,28 @@ def simple_backtest(config, contour, num_results) -> None:
     data = load_data_test(contour)
     processed = backtesting.analyze.tickerdata_to_dataframe(data)
     assert isinstance(processed, dict)
-    results = backtesting.backtest(
-        {
-            'stake_amount': config['stake_amount'],
-            'processed': processed,
-            'max_open_trades': 1,
-            'realistic': True
-        }
-    )
+    results = backtesting.backtest(config['stake_amount'], processed, True, 1)
     # results :: <class 'pandas.core.frame.DataFrame'>
     assert len(results) == num_results
 
 
-def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False, timerange=None):
-    tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1, timerange=timerange)
+def mocked_load_data(*args, **kwargs):
+    tickerdata = optimize.load_tickerdata_file(
+        'BTC_UNITEST', 1, timerange=kwargs.get('timerange'), datadir=kwargs.get('datadir'))
     pairdata = {'BTC_UNITEST': tickerdata}
     return pairdata
 
 
 # use for mock freqtrade.exchange.get_ticker_history'
 def _load_pair_as_ticks(pair, tickfreq):
-    ticks = optimize.load_data(None, ticker_interval=tickfreq, pairs=[pair])
+    ticks = optimize.load_data(ticker_interval=tickfreq, pairs=[pair])
     ticks = trim_dictlist(ticks, -200)
     return ticks[pair]
 
 
 # FIX: fixturize this?
 def _make_backtest_conf(conf=None, pair='BTC_UNITEST', record=None):
-    data = optimize.load_data(None, ticker_interval=8, pairs=[pair])
+    data = optimize.load_data(ticker_interval=8, pairs=[pair])
     data = trim_dictlist(data, -200)
     return {
         'stake_amount': conf['stake_amount'],
@@ -148,19 +144,16 @@ def _trend_alternate(dataframe=None):
     return dataframe
 
 
-def _run_backtest_1(fun, backtest_conf):
+def mocked_backtest(populate_callable: Callable, backtest_conf: Dict):
     # strategy is a global (hidden as a singleton), so we
     # emulate strategy being pure, by override/restore here
     # if we dont do this, the override in strategy will carry over
     # to other tests
-    old_buy = _BACKTESTING.analyze.populate_buy_trend
-    old_sell = _BACKTESTING.analyze.populate_sell_trend
-    _BACKTESTING.analyze.populate_buy_trend = fun  # Override
-    _BACKTESTING.analyze.populate_sell_trend = fun  # Override
-    results = _BACKTESTING.backtest(backtest_conf)
-    _BACKTESTING.analyze.populate_buy_trend = old_buy  # restore override
-    _BACKTESTING.analyze.populate_sell_trend = old_sell  # restore override
-    return results
+    with unittest.mock.patch.multiple(
+            _BACKTESTING.analyze,
+            populate_buy_trend=populate_callable,
+            populate_sell_trend=populate_callable):
+        return _BACKTESTING.backtest(**backtest_conf)
 
 
 # Unit tests
@@ -289,7 +282,7 @@ def test_start(mocker, default_conf, caplog) -> None:
     assert start_mock.call_count == 1
 
 
-def test_backtesting__init__(mocker, default_conf) -> None:
+def test_backtesting__init__(default_conf) -> None:
     """
     Test Backtesting.__init__() method
     """
@@ -304,7 +297,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     """
 
     timerange = ((None, 'line'), None, -100)
-    tick = optimize.load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
+    tick = optimize.load_tickerdata_file('BTC_UNITEST', 1, timerange=timerange)
     tickerlist = {'BTC_UNITEST': tick}
 
     backtesting = _BACKTESTING
@@ -324,11 +317,7 @@ def test_get_timeframe() -> None:
     backtesting = _BACKTESTING
 
     data = backtesting.analyze.tickerdata_to_dataframe(
-        optimize.load_data(
-            None,
-            ticker_interval=1,
-            pairs=['BTC_UNITEST']
-        )
+        optimize.load_data(1, pairs=['BTC_UNITEST'])
     )
     min_date, max_date = backtesting.get_timeframe(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
@@ -363,7 +352,7 @@ def test_generate_text_table():
         '0.60000000            20.0         2       0'
     )
 
-    assert backtesting._generate_text_table(data={'BTC_ETH': {}}, results=results) == result_str
+    assert backtesting._generate_text_table(data={'BTC_ETH': [{}]}, results=results) == result_str
 
 
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
@@ -411,15 +400,12 @@ def test_backtest(default_conf) -> None:
     """
     backtesting = _BACKTESTING
 
-    data = optimize.load_data(None, ticker_interval=5, pairs=['BTC_ETH'])
+    data = optimize.load_data(5, pairs=['BTC_ETH'])
     data = trim_dictlist(data, -200)
     results = backtesting.backtest(
-        {
-            'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.analyze.tickerdata_to_dataframe(data),
-            'max_open_trades': 10,
-            'realistic': True
-        }
+        default_conf['stake_amount'],
+        backtesting.analyze.tickerdata_to_dataframe(data),
+        True, 10,
     )
     assert not results.empty
 
@@ -431,15 +417,12 @@ def test_backtest_1min_ticker_interval(default_conf) -> None:
     backtesting = _BACKTESTING
 
     # Run a backtesting for an exiting 5min ticker_interval
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'])
+    data = optimize.load_data(1, pairs=['BTC_UNITEST'])
     data = trim_dictlist(data, -200)
     results = backtesting.backtest(
-        {
-            'stake_amount': default_conf['stake_amount'],
-            'processed': backtesting.analyze.tickerdata_to_dataframe(data),
-            'max_open_trades': 1,
-            'realistic': True
-        }
+        default_conf['stake_amount'],
+        backtesting.analyze.tickerdata_to_dataframe(data),
+        True, 1
     )
     assert not results.empty
 
@@ -461,18 +444,17 @@ def test_processed() -> None:
 
 
 def test_backtest_pricecontours(default_conf) -> None:
-    tests = [['raise', 17], ['lower', 0], ['sine', 17]]
+    tests = [['raise', 30], ['lower', 1], ['sine', 37]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
 
 
 # Test backtest using offline data (testdata directory)
 def test_backtest_ticks(default_conf):
-    ticks = [1, 5]
     fun = _BACKTESTING.analyze.populate_buy_trend
-    for tick in ticks:
+    for _ in [1, 5]:
         backtest_conf = _make_backtest_conf(conf=default_conf)
-        results = _run_backtest_1(fun, backtest_conf)
+        results = mocked_backtest(fun, backtest_conf)
         assert not results.empty
 
 
@@ -484,7 +466,7 @@ def test_backtest_clash_buy_sell(default_conf):
         return _trend(dataframe, buy_value, sell_value)
 
     backtest_conf = _make_backtest_conf(conf=default_conf)
-    results = _run_backtest_1(fun, backtest_conf)
+    results = mocked_backtest(fun, backtest_conf)
     assert results.empty
 
 
@@ -496,13 +478,13 @@ def test_backtest_only_sell(default_conf):
         return _trend(dataframe, buy_value, sell_value)
 
     backtest_conf = _make_backtest_conf(conf=default_conf)
-    results = _run_backtest_1(fun, backtest_conf)
+    results = mocked_backtest(fun, backtest_conf)
     assert results.empty
 
 
 def test_backtest_alternate_buy_sell(default_conf):
     backtest_conf = _make_backtest_conf(conf=default_conf, pair='BTC_UNITEST')
-    results = _run_backtest_1(_trend_alternate, backtest_conf)
+    results = mocked_backtest(_trend_alternate, backtest_conf)
     assert len(results) == 3
 
 
@@ -518,7 +500,7 @@ def test_backtest_record(default_conf, mocker):
         pair='BTC_UNITEST',
         record="trades"
     )
-    results = _run_backtest_1(_trend_alternate, backtest_conf)
+    results = mocked_backtest(_trend_alternate, backtest_conf)
     assert len(results) == 3
     # Assert file_dump_json was only called once
     assert names == ['backtest-result.json']

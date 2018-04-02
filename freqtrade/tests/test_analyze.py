@@ -188,7 +188,7 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     analyze = Analyze(default_conf)
 
     timerange = ((None, 'line'), None, -100)
-    tick = load_tickerdata_file(None, 'BTC_UNITEST', 1, timerange=timerange)
+    tick = load_tickerdata_file('BTC_UNITEST', 1, timerange=timerange)
     tickerlist = {'BTC_UNITEST': tick}
     data = analyze.tickerdata_to_dataframe(tickerlist)
     assert len(data['BTC_UNITEST']) == 100

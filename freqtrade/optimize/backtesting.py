@@ -202,11 +202,11 @@ class Backtesting(object):
         else:
             logger.info('Using local backtesting data (using whitelist in given config) ...')
             data = optimize.load_data(
-                self.config['datadir'],
+                self.analyze.strategy.ticker_interval,
                 pairs=pairs,
-                ticker_interval=self.analyze.strategy.ticker_interval,
                 refresh_pairs=self.config.get('refresh_pairs', False),
-                timerange=Arguments.parse_timerange(self.config.get('timerange'))
+                timerange=Arguments.parse_timerange(self.config.get('timerange')),
+                datadir=self.config['datadir'],
             )
 
         # Ignore max_open_trades in backtesting, except realistic flag was passed

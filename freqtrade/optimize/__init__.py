@@ -26,9 +26,9 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: Tuple[Tuple, int, int]) -
 
 
 def load_tickerdata_file(
-        datadir: str, pair: str,
-        ticker_interval: int,
-        timerange: Optional[Tuple[Tuple, int, int]] = None) -> Optional[List[Dict]]:
+        pair: str, ticker_interval: int,
+        timerange: Optional[Tuple[Tuple, int, int]] = None,
+        datadir: Optional[str] = None) -> Optional[List[Dict]]:
     """
     Load a pair from file,
     :return dict OR empty if unsuccesful
@@ -58,10 +58,11 @@ def load_tickerdata_file(
     return pairdata
 
 
-def load_data(datadir: str, ticker_interval: int,
+def load_data(ticker_interval: int,
               pairs: Optional[List[str]] = None,
               refresh_pairs: Optional[bool] = False,
-              timerange: Optional[Tuple[Tuple, int, int]] = None) -> Dict[str, List]:
+              timerange: Optional[Tuple[Tuple, int, int]] = None,
+              datadir: Optional[str] = None) -> Dict[str, List]:
     """
     Loads ticker history data for the given parameters
     :return: dict
@@ -73,20 +74,21 @@ def load_data(datadir: str, ticker_interval: int,
     # If the user force the refresh of pairs
     if refresh_pairs:
         logger.info('Download data for all pairs and store them in %s', datadir)
-        download_pairs(datadir, _pairs, ticker_interval)
+        download_pairs(_pairs, ticker_interval, datadir=datadir)
 
     for pair in _pairs:
-        pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
+        pairdata = load_tickerdata_file(pair, ticker_interval, timerange=timerange, datadir=datadir)
         if not pairdata:
             # download the tickerdata from exchange
-            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
+            download_backtesting_testdata(pair, interval=ticker_interval, datadir=datadir)
             # and retry reading the pair
-            pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
+            pairdata = load_tickerdata_file(
+                pair, ticker_interval, timerange=timerange, datadir=datadir)
         result[pair] = pairdata
     return result
 
 
-def make_testdata_path(datadir: str) -> str:
+def make_testdata_path(datadir: Optional[str] = None) -> str:
     """Return the path where testdata files are stored"""
     return datadir or os.path.abspath(
         os.path.join(
@@ -95,11 +97,11 @@ def make_testdata_path(datadir: str) -> str:
     )
 
 
-def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
+def download_pairs(pairs: List[str], ticker_interval: int, datadir: Optional[str] = None) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
-            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
+            download_backtesting_testdata(pair, interval=ticker_interval, datadir=datadir)
         except BaseException:
             logger.info(
                 'Failed to download the pair: "%s", Interval: %s min',
@@ -111,7 +113,8 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
 
 
 # FIX: 20180110, suggest rename interval to tick_interval
-def download_backtesting_testdata(datadir: str, pair: str, interval: int = 5) -> None:
+def download_backtesting_testdata(
+        pair: str, interval: int = 5, datadir: Optional[str] = None) -> None:
     """
     Download the latest 1 and 5 ticker intervals from Bittrex for the pairs passed in parameters
     Based on @Rybolov work: https://github.com/rybolov/freqtrade-data

@@ -495,10 +495,10 @@ class Hyperopt(Backtesting):
     def start(self) -> None:
         timerange = Arguments.parse_timerange(self.config.get('timerange'))
         data = load_data(
-            datadir=self.config.get('datadir'),
             pairs=self.config['exchange']['pair_whitelist'],
             ticker_interval=self.analyze.strategy.ticker_interval,
-            timerange=timerange
+            timerange=timerange,
+            datadir=self.config.get('datadir'),
         )
 
         if self.has_space('buy'):

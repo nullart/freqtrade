@@ -432,7 +432,7 @@ def test_processed() -> None:
 
 
 def test_backtest_pricecontours(default_conf) -> None:
-    tests = [['raise', 30], ['lower', 1], ['sine', 37]]
+    tests = [['raise', 17], ['lower', 0], ['sine', 17]]
     for [contour, numres] in tests:
         simple_backtest(default_conf, contour, numres)
 
@@ -447,26 +447,18 @@ def test_backtest_ticks(default_conf):
 
 
 def test_backtest_clash_buy_sell(default_conf):
-    # Override the default buy trend function in our DefaultStrategy
-    def fun(dataframe=None):
-        buy_value = 1
-        sell_value = 1
-        return _trend(dataframe, buy_value, sell_value)
-
     backtest_conf = _make_backtest_conf(conf=default_conf)
-    results = mocked_backtest(fun, backtest_conf)
+    # Override the default buy trend function in our DefaultStrategy
+    results = mocked_backtest(
+        lambda df: _trend(df, buy_value=1, sell_value=1), backtest_conf)
     assert results.empty
 
 
 def test_backtest_only_sell(default_conf):
-    # Override the default buy trend function in our DefaultStrategy
-    def fun(dataframe=None):
-        buy_value = 0
-        sell_value = 1
-        return _trend(dataframe, buy_value, sell_value)
-
     backtest_conf = _make_backtest_conf(conf=default_conf)
-    results = mocked_backtest(fun, backtest_conf)
+    # Override the default buy trend function in our DefaultStrategy
+    results = mocked_backtest(
+        lambda df: _trend(df, buy_value=0, sell_value=1), backtest_conf)
     assert results.empty
 
 

@@ -142,6 +142,10 @@ class Backtesting(object):
 
             lock_pair_until = None
             for index, row in enumerate(ticker):
+                # Simulate buy condition from freqtradebot.create_trade(...)
+                if not (row.buy == 1.0 and row.sell == 0.0):
+                    continue
+
                 if realistic:
                     if lock_pair_until and row.date <= lock_pair_until:
                         continue

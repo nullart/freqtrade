@@ -172,30 +172,26 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     ]
 
     config = setup_configuration(get_args(args))
-    assert 'max_open_trades' in config
-    assert 'stake_currency' in config
-    assert 'stake_amount' in config
-    assert 'exchange' in config
+    required_properties = [
+        'max_open_trades', 'stake_currency', 'stake_amount',
+        'exchange', 'datadir', 'ticker_interval',
+    ]
+    for prop in required_properties:
+        assert prop in config
+
     assert 'pair_whitelist' in config['exchange']
-    assert 'datadir' in config
+
+    for prop in ['realistic_simulation', 'refresh_pairs', 'timerange', 'export']:
+        assert prop not in config
+
     assert log_has(
         'Parameter --datadir detected: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
-    assert 'ticker_interval' in config
     assert not log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-
-    assert 'live' not in config
     assert not log_has('Parameter -l/--live detected ...', caplog.record_tuples)
-
-    assert 'realistic_simulation' not in config
     assert not log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
-
-    assert 'refresh_pairs' not in config
     assert not log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
-
-    assert 'timerange' not in config
-    assert 'export' not in config
 
 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
@@ -220,39 +216,31 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     ]
 
     config = setup_configuration(get_args(args))
-    assert 'max_open_trades' in config
-    assert 'stake_currency' in config
-    assert 'stake_amount' in config
-    assert 'exchange' in config
+    required_properties = [
+        'max_open_trades', 'stake_currency', 'stake_amount',
+        'exchange', 'datadir', 'ticker_interval', 'live',
+        'realistic_simulation', 'refresh_pairs', 'timerange',
+        'export',
+    ]
+    for prop in required_properties:
+        assert prop in config
+
     assert 'pair_whitelist' in config['exchange']
-    assert 'datadir' in config
+
     assert log_has(
         'Parameter --datadir detected: {} ...'.format(config['datadir']),
         caplog.record_tuples
     )
-    assert 'ticker_interval' in config
     assert log_has('Parameter -i/--ticker-interval detected ...', caplog.record_tuples)
-    assert log_has(
-        'Using ticker_interval: 1 ...',
-        caplog.record_tuples
-    )
-
-    assert 'live' in config
+    assert log_has('Using ticker_interval: 1 ...', caplog.record_tuples)
     assert log_has('Parameter -l/--live detected ...', caplog.record_tuples)
-
-    assert 'realistic_simulation'in config
     assert log_has('Parameter --realistic-simulation detected ...', caplog.record_tuples)
     assert log_has('Using max_open_trades: 1 ...', caplog.record_tuples)
-
-    assert 'refresh_pairs'in config
     assert log_has('Parameter -r/--refresh-pairs-cached detected ...', caplog.record_tuples)
-    assert 'timerange' in config
     assert log_has(
         'Parameter --timerange detected: {} ...'.format(config['timerange']),
         caplog.record_tuples
     )
-
-    assert 'export' in config
     assert log_has(
         'Parameter --export detected: {} ...'.format(config['export']),
         caplog.record_tuples

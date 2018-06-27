@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 import os
 import requests
 from pathlib import Path
+import sys, traceback
 
 logger = logging.getLogger(__name__)
 
@@ -131,8 +132,9 @@ class StrategyResolver(object):
                     # register temp path with the bot
                     abs_paths.insert(0, temp.absolute())
 
-            except requests.RequestException:
-                logger.debug("received error trying to fetch strategy remotely, carry on!")
+            except requests.RequestException as e:
+                logger.warning("received error trying to fetch strategy remotely, carry on, {}".format(e))
+                traceback.print_exc()
 
         for path in abs_paths:
             strategy = self._search_strategy(path, strategy_name)

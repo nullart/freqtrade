@@ -35,7 +35,8 @@ setup(name='freqtrade',
           'TA-Lib',
           'tabulate',
           'cachetools',
-          'coinmarketcap'
+          'coinmarketcap',
+          'simplejson'
       ],
       include_package_data=True,
       zip_safe=False,

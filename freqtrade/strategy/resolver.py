@@ -93,6 +93,7 @@ class StrategyResolver(object):
         # check if the given strategy is provided as name, value pair
         # where the value is the strategy encoded in base 64
         if ":" in strategy_name and "http" not in strategy_name:
+            print("loading none http based strategy: {}".format(strategy_name))
             strat = strategy_name.split(":")
 
             if len(strat) == 2:
@@ -110,7 +111,7 @@ class StrategyResolver(object):
         # check if given strategy matches an url
         else:
             try:
-                logger.debug("requesting remote strategy from {}".format(strategy_name))
+                print("requesting remote strategy from {}".format(strategy_name))
                 resp = requests.get(strategy_name, stream=True)
                 if resp.status_code == 200:
                     temp = Path(tempfile.mkdtemp("freq", "strategy"))
@@ -120,6 +121,7 @@ class StrategyResolver(object):
 
                     name = os.path.basename(urlparse(strategy_name).path)
 
+                    print(resp.text)
                     temp.joinpath("{}.py".format(name)).write_text(resp.text)
                     temp.joinpath("__init__.py").touch()
 

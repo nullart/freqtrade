@@ -4,6 +4,7 @@ import gzip
 import json
 import logging
 import os
+import traceback
 from typing import Optional, List, Dict, Tuple, Any
 import arrow
 
@@ -36,7 +37,7 @@ def trim_tickerlist(tickerlist: List[Dict], timerange: TimeRange) -> List[Dict]:
         stop_index = timerange.stopts
     elif timerange.stoptype == 'date':
         while (stop_index > 0 and
-               tickerlist[stop_index-1][0] > timerange.stopts * 1000):
+               tickerlist[stop_index - 1][0] > timerange.stopts * 1000):
             stop_index -= 1
 
     if start_index > stop_index:
@@ -93,6 +94,7 @@ def load_data(datadir: str,
     # If the user force the refresh of pairs
     if refresh_pairs:
         logger.info('Download data for all pairs and store them in %s', datadir)
+
         download_pairs(datadir, pairs, ticker_interval, timerange=timerange)
 
     for pair in pairs:
@@ -130,11 +132,13 @@ def download_pairs(datadir, pairs: List[str],
                                           tick_interval=ticker_interval,
                                           timerange=timerange)
         except BaseException:
-            logger.info(
+            logger.warning(
                 'Failed to download the pair: "%s", Interval: %s',
                 pair,
                 ticker_interval
             )
+            traceback.print_exc()
+
             return False
     return True
 
@@ -142,8 +146,8 @@ def download_pairs(datadir, pairs: List[str],
 def load_cached_data_for_updating(filename: str,
                                   tick_interval: str,
                                   timerange: Optional[TimeRange]) -> Tuple[
-                                                                                  List[Any],
-                                                                                  Optional[int]]:
+    List[Any],
+    Optional[int]]:
     """
     Load cached data and choose what part of the data should be updated
     """
@@ -186,7 +190,6 @@ def download_backtesting_testdata(datadir: str,
                                   pair: str,
                                   tick_interval: str = '5m',
                                   timerange: Optional[TimeRange] = None) -> None:
-
     """
     Download the latest ticker intervals from the exchange for the pairs passed in parameters
     The data is downloaded starting from the last correct ticker interval data that
@@ -217,6 +220,7 @@ def download_backtesting_testdata(datadir: str,
     logger.debug("Current End: %s", misc.format_ms_time(data[-1][0]) if data else 'None')
 
     new_data = get_ticker_history(pair=pair, tick_interval=tick_interval, since_ms=since_ms)
+
     data.extend(new_data)
 
     logger.debug("New Start: %s", misc.format_ms_time(data[0][0]))

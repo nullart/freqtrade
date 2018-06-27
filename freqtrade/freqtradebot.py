@@ -256,7 +256,7 @@ class FreqtradeBot(object):
         used_rate = ticker_rate
 
         if 'use_book_order' in self.config['bid_strategy'] and self.config['bid_strategy'].get('use_book_order', False):
-            logger.info('Getting price from Order Book')
+            print('Getting price from Order Book')
             orderBook_top = self.config.get('bid_strategy', {}).get('book_order_top', 1)
             orderBook = exchange.get_order_book(pair, orderBook_top)
             # top 1 = index 0
@@ -269,8 +269,9 @@ class FreqtradeBot(object):
                 used_rate = ticker_rate
             used_rate = orderBook_rate
         else:
-            logger.info('Using Last Ask / Last Price')
+            logger.warning('Using Last Ask / Last Price')
             used_rate = ticker_rate
+
         percent_from_top = self.config.get('bid_strategy', {}).get('percent_from_top', 0)
         if percent_from_top > 0:
             used_rate = used_rate - (used_rate * percent_from_top)
@@ -470,7 +471,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
             logger.info('trying to selling at roi rate %0.8f', sell_rate)
 
         if 'ask_strategy' in self.config and self.config['ask_strategy'].get('use_book_order', False):
-            logger.info('Using order book for selling...')
+            logger.warning('Using order book for selling...')
 
             # logger.debug('Order book %s',orderBook)
             orderBook_min = self.config['ask_strategy']['book_order_min']

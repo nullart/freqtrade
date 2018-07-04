@@ -54,7 +54,8 @@ from freqtrade.configuration import Configuration
 from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
-_CONF: Dict[str, Any] = {}
+_CONF: Dict[str, Any] = {
+}
 logger = logging.getLogger('freqtrade')
 
 
@@ -416,11 +417,12 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
         exchange.init({'key': '', 'secret': ''})
         tickers[pair] = exchange.get_ticker_history(pair, tick_interval)
     else:
+        print("load data")
         tickers = optimize.load_data(
             datadir=_CONF.get("datadir"),
             pairs=[pair],
             ticker_interval=tick_interval,
-            refresh_pairs=False,
+            refresh_pairs=True,
             timerange=timerange
         )
     dataframes = analyze.tickerdata_to_dataframe(tickers)
@@ -431,11 +433,6 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
     if len(dataframe.index) > args.plotticks:
         logger.warning('Ticker contained more than {} candles, clipping.'.format(args.plotticks))
     data = dataframe.tail(args.plotticks)
-    trades = []
-    if args.db_url:
-        engine = create_engine('sqlite:///' + args.db_url)
-        persistence.init(_CONF, engine)
-        trades = Trade.query.filter(Trade.pair.is_(pair)).all()
 
     if len(dataframe.index) > 750:
         logger.warning('Ticker contained more than 750 candles, clipping.')
@@ -480,31 +477,6 @@ def plot_analyzed_dataframe(args: Namespace) -> None:
             color='red',
         )
 
-    )
-
-    trade_buys = go.Scattergl(
-        x=[t.open_date.isoformat() for t in trades],
-        y=[t.open_rate for t in trades],
-        mode='markers',
-        name='trade_buy',
-        marker=dict(
-            symbol='square-open',
-            size=11,
-            line=dict(width=2),
-            color='green'
-        )
-    )
-    trade_sells = go.Scattergl(
-        x=[t.close_date.isoformat() for t in trades],
-        y=[t.close_rate for t in trades],
-        mode='markers',
-        name='trade_sell',
-        marker=dict(
-            symbol='square-open',
-            size=11,
-            line=dict(width=2),
-            color='red'
-        )
     )
 
     bb_lower = go.Scatter(

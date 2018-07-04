@@ -6,6 +6,7 @@
     "ticker_interval" : "5m",
     "dry_run": false,
     "disable_buy" : false,
+    "high_risk_trading": false,
     "unfilledtimeout": {
         "buy":10,
         "sell":30

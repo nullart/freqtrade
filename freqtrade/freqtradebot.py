@@ -24,6 +24,8 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
 from freqtrade.state import State
 
+from numpy import mean, nan_to_num
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,7 +103,9 @@ class FreqtradeBot(object):
             ('use_book_order' in self.config['ask_strategy'] and \
             self.config['ask_strategy'].get('use_book_order', False))) and \
             self.config['dry_run'] and state == State.RUNNING:
-                self.rpc.send_msg('*Warning:* `Order book enabled in dry run. Results will be misleading`')
+                self.rpc.send_msg('*Warning:* `Order book enabled in dry run. Results will be misleading.`')
+            if self.config.get('high_risk_trading', False) and state == State.RUNNING:
+                self.rpc.send_msg('*Warning:* `High risk trading enabled. Profits will be re-traded.`')
 
         if state == State.STOPPED:
             time.sleep(1)
@@ -296,6 +300,18 @@ class FreqtradeBot(object):
         stake_currency = self.config['stake_currency']
         fiat_currency = self.config['fiat_display_currency']
         exc_name = exchange.get_name()
+
+        if self.config.get('high_risk_trading', False):
+            current_trades = self.config['max_open_trades'] - Trade.query.filter(Trade.is_open.is_(True)).count()
+            if current_trades > 0:
+                total_percent_profits = self.get_trade_profits()
+                if total_percent_profits > 0:
+                    stake_net = stake_amount * (1+(self.analyze.trunc_num(total_percent_profits, 1)/100))
+                    stake_amount = self.analyze.trunc_num(stake_net, 8)
+                    logger.info(
+                        'High Risk Stake amount: %f ...',
+                        stake_amount
+                    )
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -666,3 +682,22 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         # Send the message
         self.rpc.send_msg(message)
         Trade.session.flush()
+
+    def get_trade_profits(self) -> float:
+        """
+            commulative trade profits in percent
+        """
+        trades = Trade.query.order_by(Trade.id).all()
+
+        profit_closed_percent = []
+        durations = []
+
+        for trade in trades:
+
+            if not trade.is_open:
+                profit_percent = trade.calc_profit_percent()
+                profit_closed_percent.append(profit_percent)
+
+        # Prepare data to display
+        profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
+        return  profit_closed_percent

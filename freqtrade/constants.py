@@ -63,6 +63,7 @@ CONF_SCHEMA = {
             },
             'required': ['buy', 'sell']
         },
+        'high_risk_trading': {'type': 'boolean'},
         'bid_strategy': {
             'type': 'object',
             'properties': {

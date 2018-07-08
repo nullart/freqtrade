@@ -63,7 +63,7 @@ class Analyze(object):
             'close': 'last',
             'volume': 'max',
         })
-
+        frame.drop(frame.tail(1).index, inplace=True)  # eliminate partial candle
         return frame
 
     def populate_indicators(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
@@ -106,10 +106,6 @@ class Analyze(object):
         :return DataFrame with ticker data and indicator data
         """
         dataframe = self.parse_ticker_dataframe(ticker_history)
-        # eliminate partials for known exchanges that sends partial candles
-        if self.config['exchange']['name'] in ['binance']:
-            logger.debug('eliminating partial candle')
-            dataframe.drop(dataframe.tail(1).index, inplace=True)  # eliminate partial candle
         dataframe = self.populate_indicators(dataframe, pair)
         dataframe = self.populate_buy_trend(dataframe, pair)
         dataframe = self.populate_sell_trend(dataframe, pair)
@@ -154,7 +150,7 @@ class Analyze(object):
         # Check if dataframe is out of date
         signal_date = arrow.get(latest['date'])
         interval_minutes = constants.TICKER_INTERVAL_MINUTES[interval]
-        if signal_date < (arrow.utcnow() - timedelta(minutes=(interval_minutes + 5))):
+        if signal_date < (arrow.utcnow() - timedelta(minutes=(interval_minutes + interval_minutes))):
             logger.debug('signal %s vs arrow now %s', signal_date, arrow.utcnow())
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',

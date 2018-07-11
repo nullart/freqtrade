@@ -1,8 +1,8 @@
 # freqtrade
 
-[![Build Status](https://travis-ci.org/berlinguyinca/freqtrade.svg?branch=develop)](https://travis-ci.org/freqtrade/freqtrade)
-[![Coverage Status](https://coveralls.io/repos/github/berlinguyinca/freqtrade/badge.svg?branch=wohlgemuth)](https://coveralls.io/github/berlinguyinca/freqtrade?branch=wohlgemuth)
-[![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/berlinguyinca/freqtrade/maintainability)
+[![Build Status](https://travis-ci.org/nullart/freqtrade.svg?branch=nullartHFT)](https://travis-ci.org/nullart/freqtrade)
+[![Coverage Status](https://coveralls.io/repos/github/nullart/freqtrade/badge.svg?branch=nullartHFT)](https://coveralls.io/github/nullart/freqtrade?branch=nullartHFT)
+[![Maintainability](https://api.codeclimate.com/v1/badges/b07801ef80e840d2e454/maintainability)](https://codeclimate.com/github/nullart/freqtrade/maintainability)
 
 
 ## First of all, this is a fork!

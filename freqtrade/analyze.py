@@ -270,9 +270,9 @@ class Analyze(object):
 
     def order_book_to_dataframe(self, data: list) -> DataFrame:
         """
-        Gets order book list, returns dataframe with below format
+        Gets order book list, returns dataframe with below format per suggested by creslin
         -------------------------------------------------------------------
-         bids       b_size       a_sum       asks       a_size       a_sum
+         b_sum       b_size       bids       asks       a_size       a_sum
         -------------------------------------------------------------------
         """
         cols = ['bids', 'b_size']

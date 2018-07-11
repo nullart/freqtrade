@@ -246,7 +246,7 @@ def get_order_book(pair: str, limit: Optional[int] = 100) -> dict:
     try:
         params = {}
         # 20180619: bittrex doesnt support limits -.-
-        # 20180619: binance limit fix.. binance currently has valid range
+        # 20180619: binance support limits but only on specific range
         if _API.name == 'Binance':
             limit_range = [5, 10, 20, 50, 100, 500, 1000]
             for limitx in limit_range:

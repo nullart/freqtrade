@@ -46,7 +46,7 @@ def test_analyze_object() -> None:
 
 def test_dataframe_correct_length(result):
     dataframe = Analyze.parse_ticker_dataframe(result)
-    assert len(result.index) == len(dataframe.index)    # last partial candle NOT removed (for non binance or other known exchanges)
+    assert len(result.index) - 1  == len(dataframe.index)
 
 
 def test_dataframe_correct_columns(result):
@@ -142,8 +142,9 @@ def test_get_signal_empty_dataframe(default_conf, mocker, caplog):
 def test_get_signal_old_dataframe(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     mocker.patch('freqtrade.analyze.get_ticker_history', return_value=1)
-    # FIX: The get_signal function has hardcoded 10, which we must inturn hardcode
-    oldtime = arrow.utcnow() - datetime.timedelta(minutes=11)
+    # default_conf defines a 5m interval. we check interval * 2 + 5m
+    # this is necessary as the last candle is removed (partial candles) by default
+    oldtime = arrow.utcnow().shift(minutes=-16)
     ticks = DataFrame([{'buy': 1, 'date': oldtime}])
     mocker.patch.multiple(
         'freqtrade.analyze.Analyze',
@@ -153,7 +154,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog):
     )
     assert (False, False) == _ANALYZE.get_signal('xyz', default_conf['ticker_interval'])
     assert log_has(
-        'Outdated history for pair xyz. Last tick is 11 minutes old',
+        'Outdated history for pair xyz. Last tick is 16 minutes old',
         caplog.record_tuples
     )
 
@@ -188,4 +189,4 @@ def test_tickerdata_to_dataframe(default_conf) -> None:
     tick = load_tickerdata_file(None, 'UNITTEST/BTC', '1m', timerange=timerange)
     tickerlist = {'UNITTEST/BTC': tick}
     data = analyze.tickerdata_to_dataframe(tickerlist)
-    assert len(data['UNITTEST/BTC']) == 100       # partial candle was NOT removed (only for known exchanges like binance)
+    assert len(data['UNITTEST/BTC']) == 99

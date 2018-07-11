@@ -507,7 +507,7 @@ def test_balance_fully_ask_side(mocker) -> None:
     }
     freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
-    assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
+    assert freqtrade.get_target_bid('ETH/BTC') >= 0.06
 
 
 def test_balance_fully_last_side(mocker) -> None:
@@ -522,7 +522,7 @@ def test_balance_fully_last_side(mocker) -> None:
     }
     freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
-    assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
+    assert freqtrade.get_target_bid('ETH/BTC') >= 0.06
 
 
 def test_balance_bigger_last_ask(mocker) -> None:
@@ -537,7 +537,7 @@ def test_balance_bigger_last_ask(mocker) -> None:
     }
     freqtrade = get_patched_freqtradebot(mocker, {'bid_strategy': param})
 
-    assert freqtrade.get_target_bid('ETH/BTC') >= 0.07
+    assert freqtrade.get_target_bid('ETH/BTC') >= 0.06
 
 
 def test_process_maybe_execute_buy(mocker, default_conf) -> None:

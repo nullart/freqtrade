@@ -159,7 +159,9 @@ class FreqtradeBot(object):
             self.config['exchange']['pair_whitelist'] = final_list
 
             # Query trades from persistence layer
-            trades = Trade.query.filter(Trade.is_open.is_(True)).all()
+            trades = Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0)).\
+                                filter(Trade.is_open.is_(True)).\
+                                all()
 
             # First process current opened trades
             for trade in trades:
@@ -206,6 +208,7 @@ class FreqtradeBot(object):
             )
 
         tickers = exchange.get_tickers()
+        logger.debug('tickers %s', tickers)
         # check length so that we make sure that '/' is actually in the string
         tickers = [v for k, v in tickers.items()
                    if len(k.split('/')) == 2 and k.split('/')[1] == base_currency]
@@ -302,7 +305,10 @@ class FreqtradeBot(object):
         exc_name = exchange.get_name()
 
         if self.config.get('high_risk_trading', False):
-            current_trades = self.config['max_open_trades'] - Trade.query.filter(Trade.is_open.is_(True)).count()
+            current_trades = self.config['max_open_trades'] -\
+                                                Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
+                                                filter(Trade.is_open.is_(True)).\
+                                                count()
             if current_trades > 0:
                 total_percent_profits = self.get_trade_profits()
                 if total_percent_profits > 0:
@@ -326,7 +332,7 @@ class FreqtradeBot(object):
                 f'stake amount is not fulfilled (currency={stake_currency})')
 
         # Remove currently opened and latest pairs from whitelist
-        for trade in Trade.query.filter(Trade.is_open.is_(True)).all():
+        for trade in Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0)).filter(Trade.is_open.is_(True)).all():
             if trade.pair in whitelist:
                 whitelist.remove(trade.pair)
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
@@ -386,6 +392,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
+            bot_id=self.config.get('bot_id', 0),
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
@@ -555,7 +562,8 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
         sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
-        for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+        for trade in Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0))\
+                                .filter(Trade.open_order_id.isnot(None)).all():
             try:
                 # FIXME: Somehow the query above returns results
                 # where the open_order_id is in fact None.
@@ -687,7 +695,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         """
             commulative trade profits in percent
         """
-        trades = Trade.query.order_by(Trade.id).all()
+        trades = Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0)).order_by(Trade.id).all()
 
         profit_closed_percent = []
         durations = []

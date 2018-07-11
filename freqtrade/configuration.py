@@ -99,6 +99,8 @@ class Configuration(object):
             config.update({'db_url': self.args.db_url})
             logger.info('Parameter --db-url detected ...')
 
+        logger.info('Bot ID %s', config.get('bot_id', 0))
+
         if config.get('dry_run', False):
             logger.info('Dry run is enabled')
             if config.get('db_url') in [None, constants.DEFAULT_DB_PROD_URL]:

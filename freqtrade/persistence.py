@@ -111,6 +111,15 @@ def check_migrate(engine) -> None:
         engine.execute("alter table trades add open_rate_requested float")
     if not has_column(cols, 'close_rate_requested'):
         engine.execute("alter table trades add close_rate_requested float")
+    if not has_column(cols, 'bot_id'):
+        engine.execute("alter table trades add bot_id integer")
+        engine.execute("create index bot_id_idx ON trades (bot_id);")
+    if not has_column(cols, 'stop_loss'):
+        engine.execute("alter table trades add stop_loss float")
+    if not has_column(cols, 'initial_stop_loss'):
+        engine.execute("alter table trades add initial_stop_loss float")
+    if not has_column(cols, 'max_rate'):
+        engine.execute("alter table trades add max_rate float")
 
 
 def cleanup() -> None:
@@ -126,7 +135,8 @@ def clean_dry_run_db() -> None:
     Remove open_order_id from a Dry_run DB
     :return: None
     """
-    for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
+    for trade in Trade.query.filter(Trade.bot_id == _CONF.get('bot_id', 0)).\
+                            filter(Trade.open_order_id.isnot(None)).all():
         # Check we are updating only a dry_run order not a prod one
         if 'dry_run' in trade.open_order_id:
             trade.open_order_id = None
@@ -139,6 +149,7 @@ class Trade(_DECL_BASE):
     __tablename__ = 'trades'
 
     id = Column(Integer, primary_key=True)
+    bot_id = Column(Integer, default=0, index=True)
     exchange = Column(String, nullable=False)
     pair = Column(String, nullable=False)
     is_open = Column(Boolean, nullable=False, default=True)

@@ -14,6 +14,7 @@ The table below will list all configuration parameters.
 
 |  Command | Default | Mandatory | Description |
 |----------|---------|----------|-------------|
+| `bot_id` | 0 | Yes | Unique ID of the BOT. Useful if bot will be used in relational database.
 | `max_open_trades` | 3 | Yes | Number of trades open your bot will have.
 | `stake_currency` | BTC | Yes | Crypto-currency used for trading.
 | `stake_amount` | 0.05 | Yes | Amount of crypto-currency your bot will use for each trade. Per default, the bot will use (0.05 BTC x 3) = 0.15 BTC in total will be always engaged.
@@ -162,8 +163,8 @@ you run it in production mode.
 }
 ```
 If you have not your Bittrex API key yet, 
-[see our tutorial](https://github.com/freqtrade/freqtrade/blob/develop/docs/pre-requisite.md).
+[see our tutorial](/docs/pre-requisite.md).
 
 ## Next step
 Now you have configured your config.json, the next step is to 
-[start your bot](https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-usage.md).
+[start your bot](/docs/bot-usage.md).

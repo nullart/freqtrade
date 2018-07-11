@@ -2,7 +2,7 @@
 Functions to analyze ticker data with indicators and produce buy and sell signals
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Tuple
 
@@ -11,7 +11,7 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade import constants
-from freqtrade.exchange import get_fee, get_ticker_history, get_order_book
+from freqtrade.exchange import get_fee, get_ticker_history
 from freqtrade.persistence import Trade
 from freqtrade.strategy.resolver import StrategyResolver, IStrategy
 

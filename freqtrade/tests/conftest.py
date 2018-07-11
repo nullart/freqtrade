@@ -76,6 +76,7 @@ def patch_coinmarketcap(mocker, value: Optional[Dict[str, float]] = None) -> Non
 def default_conf():
     """ Returns validated configuration suitable for most tests """
     configuration = {
+        "bot_id": 0,
         "max_open_trades": 1,
         "stake_currency": "BTC",
         "stake_amount": 0.001,

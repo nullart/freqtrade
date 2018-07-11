@@ -15,9 +15,9 @@ from freqtrade.analyze import Analyze
 from freqtrade import constants
 from freqtrade.freqtradebot import FreqtradeBot
 
-import moto
-import boto3
-import os
+# import moto
+# import boto3
+# import os
 
 logging.getLogger('').setLevel(logging.INFO)
 

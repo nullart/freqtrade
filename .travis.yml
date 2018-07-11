@@ -36,3 +36,6 @@ cache:
   directories:
     - $HOME/.cache/pip
     - ta-lib
+branches:
+  only:
+  - nullartHFT

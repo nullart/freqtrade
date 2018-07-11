@@ -136,7 +136,7 @@ def clean_dry_run_db() -> None:
     :return: None
     """
     for trade in Trade.query.filter(Trade.bot_id == _CONF.get('bot_id', 0)).\
-                            filter(Trade.open_order_id.isnot(None)).all():
+            filter(Trade.open_order_id.isnot(None)).all():
         # Check we are updating only a dry_run order not a prod one
         if 'dry_run' in trade.open_order_id:
             trade.open_order_id = None

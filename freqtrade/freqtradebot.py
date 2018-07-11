@@ -98,11 +98,11 @@ class FreqtradeBot(object):
         if state != old_state:
             self.rpc.send_msg(f'*Status:* `{state.name.lower()}`')
             logger.info('Changing state to: %s', state.name)
-            if (('use_book_order' in self.config['bid_strategy'] and \
-            self.config['bid_strategy'].get('use_book_order', False)) or \
-            ('use_book_order' in self.config['ask_strategy'] and \
-            self.config['ask_strategy'].get('use_book_order', False))) and \
-            self.config['dry_run'] and state == State.RUNNING:
+            if (('use_book_order' in self.config['bid_strategy'] and
+                self.config['bid_strategy'].get('use_book_order', False)) or
+                ('use_book_order' in self.config['ask_strategy'] and
+                self.config['ask_strategy'].get('use_book_order', False))) and\
+                    self.config['dry_run'] and state == State.RUNNING:
                 self.rpc.send_msg('*Warning:* `Order book enabled in dry run. Results will be misleading.`')
             if self.config.get('high_risk_trading', False) and state == State.RUNNING:
                 self.rpc.send_msg('*Warning:* `High risk trading enabled. Profits will be re-traded.`')
@@ -159,9 +159,8 @@ class FreqtradeBot(object):
             self.config['exchange']['pair_whitelist'] = final_list
 
             # Query trades from persistence layer
-            trades = Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0)).\
-                                filter(Trade.is_open.is_(True)).\
-                                all()
+            trades = Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
+                filter(Trade.is_open.is_(True)).all()
 
             # First process current opened trades
             for trade in trades:
@@ -291,6 +290,23 @@ class FreqtradeBot(object):
 
         return used_rate
 
+    def get_high_stake_amount(self, stake_amount: float) -> float:
+        current_trades = self.config['max_open_trades'] -\
+                                            Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
+                                            filter(Trade.is_open.is_(True)).\
+                                            count()
+        if current_trades > 0:
+            total_percent_profits = self.get_trade_profits()
+            if total_percent_profits > 0:
+                stake_net = stake_amount * (1+(self.analyze.trunc_num(total_percent_profits, 1)/100))
+                new_stake = self.analyze.trunc_num(stake_net, 8)
+                logger.info(
+                    'High Risk Stake amount: %f ...',
+                    new_stake
+                )
+                return new_stake
+        return stake_amount
+
     def create_trade(self) -> bool:
         """
         Checks the implemented trading indicator(s) for a randomly picked pair,
@@ -305,19 +321,7 @@ class FreqtradeBot(object):
         exc_name = exchange.get_name()
 
         if self.config.get('high_risk_trading', False):
-            current_trades = self.config['max_open_trades'] -\
-                                                Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
-                                                filter(Trade.is_open.is_(True)).\
-                                                count()
-            if current_trades > 0:
-                total_percent_profits = self.get_trade_profits()
-                if total_percent_profits > 0:
-                    stake_net = stake_amount * (1+(self.analyze.trunc_num(total_percent_profits, 1)/100))
-                    stake_amount = self.analyze.trunc_num(stake_net, 8)
-                    logger.info(
-                        'High Risk Stake amount: %f ...',
-                        stake_amount
-                    )
+            stake_amount = self.get_high_stake_amount(stake_amount)
 
         logger.info(
             'Checking buy signals to create a new trade with stake_amount: %f ...',
@@ -332,7 +336,7 @@ class FreqtradeBot(object):
                 f'stake amount is not fulfilled (currency={stake_currency})')
 
         # Remove currently opened and latest pairs from whitelist
-        for trade in Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0)).filter(Trade.is_open.is_(True)).all():
+        for trade in Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).filter(Trade.is_open.is_(True)).all():
             if trade.pair in whitelist:
                 whitelist.remove(trade.pair)
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
@@ -345,8 +349,8 @@ class FreqtradeBot(object):
             (buy, sell) = self.analyze.get_signal(_pair, interval)
             if buy and not sell:
                 # order book depth of market
-                if self.config.get('experimental', {}).get('check_depth_of_market', False) \
-                and (self.config.get('experimental', {}).get('dom_bids_asks_delta', 0) > 0):
+                if self.config.get('experimental', {}).get('check_depth_of_market', False) and\
+                        (self.config.get('experimental', {}).get('dom_bids_asks_delta', 0) > 0):
                     logger.info('depth of market check for %s', _pair)
                     orderBook = exchange.get_order_book(_pair, 1000)
                     orderBook_df = self.analyze.order_book_to_dataframe(orderBook)
@@ -562,7 +566,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         buy_timeoutthreashold = arrow.utcnow().shift(minutes=-buy_timeout).datetime
         sell_timeoutthreashold = arrow.utcnow().shift(minutes=-sell_timeout).datetime
 
-        for trade in Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0))\
+        for trade in Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0))\
                                 .filter(Trade.open_order_id.isnot(None)).all():
             try:
                 # FIXME: Somehow the query above returns results
@@ -695,7 +699,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         """
             commulative trade profits in percent
         """
-        trades = Trade.query.filter(Trade.bot_id==self.config.get('bot_id', 0)).order_by(Trade.id).all()
+        trades = Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).order_by(Trade.id).all()
 
         profit_closed_percent = []
         durations = []
@@ -708,4 +712,4 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
         # Prepare data to display
         profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
-        return  profit_closed_percent
+        return profit_closed_percent

@@ -284,8 +284,8 @@ class Analyze(object):
         # add cumulative sum column
         asks_frame['a_sum'] = asks_frame['a_size'].cumsum()
 
-        frame = pd.concat([bids_frame['b_sum'], bids_frame['b_size'], bids_frame['bids'], \
-            asks_frame['asks'], asks_frame['a_size'], asks_frame['a_sum']], axis=1, \
-            keys=['b_sum', 'b_size', 'bids', 'asks', 'a_size', 'a_sum'])
+        frame = pd.concat([bids_frame['b_sum'], bids_frame['b_size'], bids_frame['bids'],
+                           asks_frame['asks'], asks_frame['a_size'], asks_frame['a_sum']], axis=1,
+                          keys=['b_sum', 'b_size', 'bids', 'asks', 'a_size', 'a_sum'])
 
         return frame

@@ -24,7 +24,7 @@ from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc_manager import RPCManager
 from freqtrade.state import State
 
-from numpy import mean, nan_to_num
+from numpy import mean
 
 logger = logging.getLogger(__name__)
 
@@ -291,17 +291,37 @@ class FreqtradeBot(object):
         return used_rate
 
     def get_high_stake_amount(self, stake_amount: float) -> float:
-        current_trades = self.config['max_open_trades'] -\
-                                            Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
-                                            filter(Trade.is_open.is_(True)).\
-                                            count()
-        if current_trades > 0:
-            total_percent_profits = self.get_trade_profits()
-            if total_percent_profits > 0:
-                stake_net = stake_amount * (1+(self.analyze.trunc_num(total_percent_profits, 1)/100))
+        """
+            initial balance = stake_amount * max_trades
+            current balance = initial balance + total closed trades in btc
+            total percent profit = (current balance / initial balance) - 1
+             = ((20 + 3) / 20) - 1
+             = 15 percent
+        """
+        current_trades = Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).\
+            filter(Trade.is_open.is_(True)).\
+            count()
+        trades_left = self.config['max_open_trades'] - current_trades
+
+        if trades_left > 0:
+            initial_balance = self.config['stake_amount'] * self.config['max_open_trades']
+            logger.debug('initial balance %.8f', initial_balance)
+            total_trade_profits, trade_fees = self.get_trade_profits_fees()
+            logger.debug('total profits %.8f', total_trade_profits)
+            logger.debug('total fees %.8f', trade_fees)
+            if total_trade_profits > 0:
+                total_profit_percent = ((initial_balance + total_trade_profits) / initial_balance) - 1
+                # deduct open and closed fees from total_profit_percent
+                # to ensure new stake_amount will be fullfilled
+                total_profit_percent = total_profit_percent - (trade_fees * 2)
+                stake_net = stake_amount * (1+(self.analyze.trunc_num(total_profit_percent, 2)))
                 new_stake = self.analyze.trunc_num(stake_net, 8)
+                logger.debug(
+                    'total_percent_profits: %.2f ...',
+                    total_profit_percent * 100
+                )
                 logger.info(
-                    'High Risk Stake amount: %f ...',
+                    'High Risk Stake amount: %.8f ...',
                     new_stake
                 )
                 return new_stake
@@ -695,21 +715,26 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         self.rpc.send_msg(message)
         Trade.session.flush()
 
-    def get_trade_profits(self) -> float:
+    def get_trade_profits_fees(self) -> Dict[float, float]:
         """
             commulative trade profits in percent
         """
         trades = Trade.query.filter(Trade.bot_id == self.config.get('bot_id', 0)).order_by(Trade.id).all()
 
-        profit_closed_percent = []
-        durations = []
+        profit_closed_coin = []
+        closed_fees = []
 
         for trade in trades:
-
             if not trade.is_open:
-                profit_percent = trade.calc_profit_percent()
-                profit_closed_percent.append(profit_percent)
+                profit_closed_coin.append(trade.calc_profit())
+                closed_fees.append(trade.fee_open)
+
+                # profit_percent = trade.calc_profit_percent()
+                # logger.info('profit_percent %f', profit_percent)
+                # profit_closed_percent.append(profit_percent)
 
         # Prepare data to display
-        profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
-        return profit_closed_percent
+        # profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
+        profit_closed_coin = round(sum(profit_closed_coin), 8)
+        closed_fees = mean(closed_fees)
+        return profit_closed_coin, closed_fees

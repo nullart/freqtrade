@@ -24,6 +24,7 @@ The table below will list all configuration parameters.
 | `minimal_roi` | See below | No | Set the threshold in percent the bot will use to sell a trade. More information below. If set, this parameter will override `minimal_roi` from your strategy file. [More information below](#understanding-minimal_roi).
 | `stoploss` | -0.10 | No | Value of the stoploss in percent used by the bot. More information below. If set, this parameter will override `stoploss` from your strategy file. 
 | `disable_buy` | false | No | Disables buying of crypto-currency. Bot will continue to sell.
+| `high_risk_trading` | false | No | Enables re-trading of profits by increasing `stake_amount` based on profits gained. [More information below](#understanding-high_risk_trading)
 | `unfilledtimeout.buy` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled.
 | `unfilledtimeout.sell` | 10 | Yes | How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled.
 | `bid_strategy.ask_last_balance` | 0.0 | Yes | Set the bidding price. [More information below](#understanding-bid_strategyask_last_balance).
@@ -84,7 +85,7 @@ Most of the strategy files already include the optimal `stoploss` value. This pa
 `process_throttle_secs` is an optional field that defines in seconds how long the bot should wait before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or the static list of pairs) if we should buy.
 
 ### Understanding bid_strategy.ask_last_balance
-`ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, `1.0` will use the `last` price and the values between those interpolate between ask and last price. Using `ask` price will guarantee quick success in bid, but bot will also end up paying more then would probably have been necessary.
+`ask_last_balance` sets the bidding price. Value `0.0` will use `ask` price, while `1.0` will use values between `last` and the `ask` price. Using `ask` price will guarantee quick success in bid, but bot will also end up paying more then would probably have been necessary.
 
 ### Understanding bid_strategy.use_book_order
 `bid_strategy.use_book_order` loads the exchange book order and sets the bidding price between `book_order_min`  and `book_order_max` value. If the `book_order_top` is set to 3, then the 3rd bidding price from the top of the book order will be selected as the bidding price for the trade.
@@ -97,6 +98,9 @@ Most of the strategy files already include the optimal `stoploss` value. This pa
 
 ### Understanding experimental.check_depth_of_market
 `experimental.check_depth_of_market` loads the exchange book order of a pair and calculates the total size of bids and asks. If the difference of the total size of bids and asks reaches the `experimental.dom_bids_asks_delta` then a buy signal is triggered. Do note that `experimental.check_depth_of_market` will only be executed after the strategy triggers a buy signal.
+
+### Understanding high_risk_trading
+`high_risk_trading` allows the bot to dynamically increase the `stake_amount` based on % increase from all closed trade. Also note the bot calculates initial `stake_currency` balance based on `stake_amount * max_trades` and not the currency balance in the exchange. This ensures no API requests (from the exchange) for every computation of a new `stake_amount`.
 
 ### What are the valid values for exchange.name?
 Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports 115+ cryptocurrency exchange markets and trading APIs. The complete up-to-date list can be found in the [CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python). However, the bot was thoroughly tested with only Bittrex and Binance.

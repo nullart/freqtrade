@@ -180,9 +180,10 @@ class RPC(object):
         ]
 
     def _rpc_trade_statistics(
-            self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
+            self, stake_currency: str, fiat_display_currency: str, bot_id: int) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
-        trades = Trade.query.order_by(Trade.id).all()
+        trades = Trade.query.filter(Trade.bot_id == bot_id) \
+            .order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_percent = []
@@ -215,6 +216,7 @@ class RPC(object):
         best_pair = Trade.session.query(
             Trade.pair, sql.func.sum(Trade.close_profit).label('profit_sum')
         ).filter(Trade.is_open.is_(False)) \
+            .filter(Trade.bot_id == bot_id) \
             .group_by(Trade.pair) \
             .order_by(sql.text('profit_sum DESC')).first()
 

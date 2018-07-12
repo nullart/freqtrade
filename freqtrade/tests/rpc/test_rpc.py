@@ -182,7 +182,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     rpc = RPC(freqtradebot)
 
     with pytest.raises(RPCException, match=r'.*no closed trade*'):
-        rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
+        rpc._rpc_trade_statistics(stake_currency, fiat_display_currency, 0)
 
     # Create some test data
     freqtradebot.create_trade()
@@ -215,7 +215,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     trade.close_date = datetime.utcnow()
     trade.is_open = False
 
-    stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
+    stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency, 0)
     assert prec_satoshi(stats['profit_closed_coin'], 6.217e-05)
     assert prec_satoshi(stats['profit_closed_percent'], 6.2)
     assert prec_satoshi(stats['profit_closed_fiat'], 0.93255)
@@ -276,7 +276,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
     for trade in Trade.query.order_by(Trade.id).all():
         trade.open_rate = None
 
-    stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
+    stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency, 0)
     assert prec_satoshi(stats['profit_closed_coin'], 0)
     assert prec_satoshi(stats['profit_closed_percent'], 0)
     assert prec_satoshi(stats['profit_closed_fiat'], 0)

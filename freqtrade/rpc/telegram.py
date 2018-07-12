@@ -202,7 +202,9 @@ class Telegram(RPC):
         try:
             stats = self._rpc_trade_statistics(
                 self._config['stake_currency'],
-                self._config['fiat_display_currency'])
+                self._config['fiat_display_currency'],
+                self._config['bot_id']
+            )
 
             # Message to display
             markdown_msg = "*ROI:* Close trades\n" \

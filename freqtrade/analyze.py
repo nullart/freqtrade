@@ -74,7 +74,7 @@ class Analyze(object):
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
         """
-        return self.strategy.advise_indicators(dataframe=dataframe, pair=pair)
+        return self.strategy.advise_indicators(dataframe=dataframe, pair=str(pair))
 
     def populate_buy_trend(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
         """
@@ -82,7 +82,7 @@ class Analyze(object):
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
-        return self.strategy.advise_buy(dataframe=dataframe, pair=pair)
+        return self.strategy.advise_buy(dataframe=dataframe, pair=str(pair))
 
     def populate_sell_trend(self, dataframe: DataFrame, pair: str = None) -> DataFrame:
         """
@@ -90,7 +90,7 @@ class Analyze(object):
         :param dataframe: DataFrame
         :return: DataFrame with buy column
         """
-        return self.strategy.advise_sell(dataframe=dataframe, pair=pair)
+        return self.strategy.advise_sell(dataframe=dataframe, pair=str(pair))
 
     def get_ticker_interval(self) -> str:
         """
@@ -204,8 +204,7 @@ class Analyze(object):
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss)
 
         # evaluate if the stoploss was hit
-        if self.strategy.stoploss is not None and trade.stop_loss >= current_rate:
-
+        if (self.strategy.stoploss is not None) and (trade.stop_loss >= current_rate):
             if 'trailing_stop' in self.config and self.config['trailing_stop']:
                 logger.debug(
                     "HIT STOP: current price at {:.6f}, stop loss is {:.6f}, "

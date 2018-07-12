@@ -242,9 +242,8 @@ def get_balances() -> dict:
 
 
 @retrier
-def get_order_book(pair: str, limit: Optional[int] = 100) -> dict:
+def get_order_book(pair: str, limit: int = 100) -> dict:
     try:
-        params = {}
         # 20180619: bittrex doesnt support limits -.-
         # 20180619: binance support limits but only on specific range
         if _API.name == 'Binance':

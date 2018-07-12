@@ -70,7 +70,7 @@ class StrategyResolver(object):
         temp.joinpath(strategy_name + ".py").write_text(strategy_content)
         temp.joinpath("__init__.py").touch()
 
-        return self._load_strategy(strategy_name, temp.absolute())
+        return self._load_strategy(strategy_name, str(temp.absolute()))
 
     def _load_strategy(
             self, strategy_name: str, extra_dir: Optional[str] = None) -> IStrategy:
@@ -105,7 +105,7 @@ class StrategyResolver(object):
                 strategy_name = os.path.splitext(name)[0]
 
                 # register temp path with the bot
-                abs_paths.insert(0, temp.absolute())
+                abs_paths.insert(0, str(temp.absolute()))
 
         # check if given strategy matches an url
         else:
@@ -127,7 +127,7 @@ class StrategyResolver(object):
 
                     # print("stored downloaded stat at: {}".format(temp))
                     # register temp path with the bot
-                    abs_paths.insert(0, temp.absolute())
+                    abs_paths.insert(0, str(temp.absolute()))
 
             except requests.RequestException:
                 logger.debug("received error trying to fetch strategy remotely, carry on!")

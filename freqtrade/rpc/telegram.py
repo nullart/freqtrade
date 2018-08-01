@@ -208,10 +208,10 @@ class Telegram(RPC):
 
             # Message to display
             markdown_msg = "*ROI:* Close trades\n" \
-                           "∙ `{profit_closed_coin:.8f} {coin} ({profit_closed_percent:.2f}%)`\n" \
+                           "∙ `{profit_closed_coin:.8f} {coin} (avg. % profit: {profit_closed_percent:.2f}%)`\n" \
                            "∙ `{profit_closed_fiat:.3f} {fiat}`\n" \
                            "*ROI:* All trades\n" \
-                           "∙ `{profit_all_coin:.8f} {coin} ({profit_all_percent:.2f}%)`\n" \
+                           "∙ `{profit_all_coin:.8f} {coin} (approx. % profit: {profit_all_percent:.2f}%)`\n" \
                            "∙ `{profit_all_fiat:.3f} {fiat}`\n" \
                            "*Total Trade Count:* `{trade_count}`\n" \
                            "*First Trade opened:* `{first_trade_date}`\n" \
@@ -424,6 +424,7 @@ class Telegram(RPC):
                     'Telegram NetworkError: %s! Trying one more time.',
                     network_err.message
                 )
+                msg = msg + ' (resend)'
                 bot.send_message(
                     self._config['telegram']['chat_id'],
                     text=msg,

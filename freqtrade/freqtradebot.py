@@ -98,14 +98,8 @@ class FreqtradeBot(object):
         if state != old_state:
             self.rpc.send_msg(f'*Status:* `{state.name.lower()}`')
             logger.info('Changing state to: %s', state.name)
-            if (('use_book_order' in self.config['bid_strategy'] and
-                self.config['bid_strategy'].get('use_book_order', False)) or
-                ('use_book_order' in self.config['ask_strategy'] and
-                self.config['ask_strategy'].get('use_book_order', False))) and\
-                    self.config['dry_run'] and state == State.RUNNING:
-                self.rpc.send_msg('*Warning:* `Order book enabled in dry run. Results will be misleading.`')
-            if self.config.get('high_risk_trading', False) and state == State.RUNNING:
-                self.rpc.send_msg('*Warning:* `High risk trading enabled. Profits will be re-traded.`')
+            if state == State.RUNNING:
+                self._initial_message()
 
         if state == State.STOPPED:
             time.sleep(1)
@@ -120,7 +114,48 @@ class FreqtradeBot(object):
             self._throttle(func=self._process,
                            min_secs=min_secs,
                            nb_assets=nb_assets)
+
         return state
+
+    def _initial_message(self) -> None:
+        if self.config.get('dry_run', False):
+            self.rpc.send_msg('*Warning:* `Paper trading is enabled. All trades are simulated.`')
+        if (('use_book_order' in self.config['bid_strategy'] and
+            self.config['bid_strategy'].get('use_book_order', False)) or
+            ('use_book_order' in self.config['ask_strategy'] and
+            self.config['ask_strategy'].get('use_book_order', False))) and\
+                self.config['dry_run']:
+            self.rpc.send_msg('*Warning:* `Order book enabled in dry run. Results will be misleading.`')
+        if self.config.get('high_risk_trading', False):
+            self.rpc.send_msg('*Warning:* `High risk trading enabled. Profits will be re-traded.`')
+        stake_currency = self.config['stake_currency']
+        stake_amount = self.config['stake_amount']
+        minimal_roi = self.config['minimal_roi']
+        ticker_interval = self.config['ticker_interval']
+        exchange_name = self.config['exchange']['name']
+        depth_of_market = ''
+        c24h_high_low = ''
+        if self.config['experimental'].get('check_depth_of_market', False):
+            dom_delta = self.config['experimental'].get('dom_bids_asks_delta', False)
+            if dom_delta > 1:
+                dom_delta = dom_delta - 1
+            dom_delta = round(dom_delta * 100)
+            depth_of_market = f'\n*Pre Buy Check:* `DOM {dom_delta}% buy to sell volume`'
+        if self.config['experimental'].get('buy_price_below_24h_h_l', False):
+            c24h_high_low = f'\n*Pre Buy Check:* `Price below 24hour high and low`'
+        self.rpc.send_msg(
+            f'*Exchange:* `{exchange_name}`\n'
+            f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
+            f'*Minimum ROI:* `{minimal_roi}`\n'
+            f'*Ticker Interval:* `{ticker_interval}`{depth_of_market}{c24h_high_low}'
+        )
+        if self.config.get('dynamic_whitelist', False):
+            top_pairs = 'top ' + str(self.config.get('dynamic_whitelist', False))
+            specific_pairs = ''
+        else:
+            top_pairs = 'whitelisted'
+            specific_pairs = '\n' + ', '.join(self.config['exchange'].get('pair_whitelist', ''))
+        self.rpc.send_msg(f'*Status:* `Searching for {top_pairs} {stake_currency} pairs to buy and sell...{specific_pairs}`')
 
     def _throttle(self, func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
         """
@@ -373,6 +408,7 @@ class FreqtradeBot(object):
                         (self.config.get('experimental', {}).get('dom_bids_asks_delta', 0) > 0):
                     logger.info('depth of market check for %s', _pair)
                     orderBook = exchange.get_order_book(_pair, 1000)
+                    logger.debug('order book %s', orderBook)
                     orderBook_df = self.analyze.order_book_to_dataframe(orderBook)
                     orderBook_bids = orderBook_df['b_size'].sum()
                     orderBook_asks = orderBook_df['a_size'].sum()
@@ -715,7 +751,7 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
         self.rpc.send_msg(message)
         Trade.session.flush()
 
-    def get_trade_profits_fees(self) -> Dict[float, float]:
+    def get_trade_profits_fees(self) -> Tuple[float, float]:
         """
             commulative trade profits in percent
         """
@@ -723,18 +759,16 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
 
         profit_closed_coin = []
         closed_fees = []
+        f_profit_closed_coin = 0.0
+        f_closed_fees = 0.0
 
         for trade in trades:
             if not trade.is_open:
                 profit_closed_coin.append(trade.calc_profit())
                 closed_fees.append(trade.fee_open)
 
-                # profit_percent = trade.calc_profit_percent()
-                # logger.info('profit_percent %f', profit_percent)
-                # profit_closed_percent.append(profit_percent)
-
         # Prepare data to display
         # profit_closed_percent = round(nan_to_num(mean(profit_closed_percent)) * 100, 2)
-        profit_closed_coin = round(sum(profit_closed_coin), 8)
-        closed_fees = mean(closed_fees)
-        return profit_closed_coin, closed_fees
+        f_profit_closed_coin = round(sum(profit_closed_coin), 8)
+        f_closed_fees = mean(closed_fees)
+        return f_profit_closed_coin, f_closed_fees

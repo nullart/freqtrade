@@ -555,6 +555,11 @@ with limit `{buy_limit:.8f} ({stake_amount:.6f} \
                     traceback.format_exc())
                 continue
             ordertime = arrow.get(order['datetime']).datetime
+            
+            # Check if trade is still actually open
+            # from freqtrade/freqtrade
+            if int(order['remaining']) == 0:
+                continue
 
             # Check if trade is still actually open
             if order['status'] == 'open':

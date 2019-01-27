@@ -19,7 +19,7 @@ hyperopt==0.1.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
 networkx==2.2
 git+git://github.com/berlinguyinca/technical
-tabulate==0.8.2
+tabulate==0.8.3
 coinmarketcap==5.0.3
 simplejson==3.16.0
 # Required for plotting data

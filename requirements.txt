@@ -14,7 +14,7 @@ numpy==1.21.2
 TA-Lib==0.4.21
 pytest==6.2.5
 pytest-mock==3.6.1
-pytest-cov==2.5.1
+pytest-cov==2.12.1
 hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
 networkx==1.11

@@ -12,7 +12,7 @@ scipy==1.7.3
 jsonschema==4.3.1
 numpy==1.21.5
 TA-Lib==0.4.22
-pytest==3.6.3
+pytest==6.2.5
 pytest-mock==1.10.0
 pytest-cov==2.5.1
 hyperopt==0.1

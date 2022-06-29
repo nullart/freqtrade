@@ -4,7 +4,7 @@ python-telegram-bot==13.13
 arrow==1.2.2
 cachetools==5.2.0
 requests==2.28.0
-urllib3==1.22
+urllib3==1.26.9
 wrapt==1.10.11
 pandas==0.23.3
 scikit-learn==0.19.1

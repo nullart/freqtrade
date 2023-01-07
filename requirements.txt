@@ -2,7 +2,7 @@ ccxt==2.5.46
 SQLAlchemy==1.4.46
 python-telegram-bot==20.0
 arrow==1.2.3
-cachetools==2.1.0
+cachetools==5.2.0
 requests==2.19.1
 urllib3==1.22
 wrapt==1.10.11

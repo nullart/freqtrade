@@ -8,7 +8,7 @@ urllib3==1.26.13
 wrapt==1.14.1
 pandas==1.5.2
 scikit-learn==1.2.0
-scipy==1.1.0
+scipy==1.10.0
 jsonschema==2.6.0
 numpy==1.14.5
 TA-Lib==0.4.17

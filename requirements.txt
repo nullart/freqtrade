@@ -9,7 +9,7 @@ wrapt==1.16.0
 pandas==2.2.2
 scikit-learn==1.4.2
 scipy==1.13.0
-jsonschema==2.6.0
+jsonschema==4.21.1
 numpy==1.14.5
 TA-Lib==0.4.17
 pytest==3.6.3

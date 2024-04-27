@@ -13,7 +13,7 @@ jsonschema==4.21.1
 numpy==1.26.4
 TA-Lib==0.4.28
 pytest==8.1.2
-pytest-mock==1.10.0
+pytest-mock==3.14.0
 pytest-cov==2.5.1
 hyperopt==0.1
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325

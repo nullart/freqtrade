@@ -6,7 +6,7 @@ cachetools==5.3.3
 requests==2.32.3
 urllib3==2.2.2
 wrapt==1.16.0
-pandas==0.23.3
+pandas==2.2.2
 scikit-learn==0.19.1
 scipy==1.1.0
 jsonschema==2.6.0

@@ -17,7 +17,7 @@ pytest-mock==3.14.0
 pytest-cov==5.0.0
 hyperopt==0.2.7
 # do not upgrade networkx before this is fixed https://github.com/hyperopt/hyperopt/issues/325
-networkx==1.11
+networkx==3.3
 git+git://github.com/berlinguyinca/technical
 tabulate==0.8.2
 coinmarketcap==5.0.3
